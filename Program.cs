@@ -10,7 +10,7 @@ namespace websocket_server
             Server.StartThreads();
             
             var wssv = new WebSocketServer ("ws://0.0.0.0:5001");
-            //wssv.AddWebSocketService<Server> ("/Server");
+            wssv.AddWebSocketService<Server> ("/Server");
             wssv.Start();
             Console.ReadKey (true);
             wssv.Stop();

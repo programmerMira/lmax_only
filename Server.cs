@@ -130,7 +130,10 @@ namespace websocket_server
 
                 for (int i = 0; i < __lmax_prices.Length; i++)
                 {
-                    messageToClientLMAX = messageToClientLMAX + "{\"name\": \"" + __INSTRUMENT_NAMES[i] + "\",\"impulse\": " + String.Format("{0:0.00000}", Math.Abs(__lmax_prices[i] - __prev_lmax_prices[i])) + ",\"timestamp\": " + __timestamps[i] + "}";
+                    messageToClientLMAX = messageToClientLMAX + 
+                                        "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
+                                        "\",\"impulse\": " + String.Format("{0:0.00000}", Math.Abs(__lmax_prices[i] - __prev_lmax_prices[i])) + 
+                                        ",\"timestamp\": " + __timestamps[i] + "}";
                     
                     if (i < __lmax_prices.Length - 1)
                     {
