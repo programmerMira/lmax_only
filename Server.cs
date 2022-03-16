@@ -53,7 +53,7 @@ namespace websocket_server
 
                     using (StreamWriter writer = new StreamWriter("lMAX_output_data.txt", true)) //// true to append data to the file
                     {
-                        writer.WriteLine("Name:" + __INSTRUMENT_ID[i]);
+                        writer.WriteLine("Name:" + __INSTRUMENT_NAMES[i]);
                         writer.WriteLine("Price:" + __lmax_prices[i].ToString());
                         writer.WriteLine("Timestamp:" + __timestamps[i].ToString());
                         writer.WriteLine();
