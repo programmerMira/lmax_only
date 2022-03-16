@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "dgSpecHash": "I+PO0b4Kj4TUnWOCBsuFDh8m1NDxAW5H7d3G1tCucpm/YOhjZDVFVsHKAxjZ/e5UKUTYGyNwJsvp+cVj2qO97A==",
+  "success": true,
+  "projectFilePath": "D:\\WORK\\CAZYX\\Prometeo_Ubuntu_test\\lmax_only\\c#_test.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\oksa0\\.nuget\\packages\\newtonsoft.json\\12.0.3\\newtonsoft.json.12.0.3.nupkg.sha512",
+    "C:\\Users\\oksa0\\.nuget\\packages\\websocketsharp\\1.0.3-rc11\\websocketsharp.1.0.3-rc11.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'WebSocketSharp 1.0.3-rc11' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework '.NETCoreApp,Version=v3.1'. This package may not be fully compatible with your project.",
+      "libraryId": "WebSocketSharp",
+      "targetGraphs": [
+        ".NETCoreApp,Version=v3.1"
+      ]
+    }
+  ]
+}

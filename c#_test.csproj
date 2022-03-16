@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>c__test</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+     <Reference Include="LmaxClientLibrary">
+       <HintPath>libs\LmaxClientLibrary.dll</HintPath>
+     </Reference>
+    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
+  </ItemGroup>
+</Project>
