@@ -1,0 +1,7 @@
+{
+  "host": "localhost",
+  "db_name": "prometeo_db",
+  "username": "root",
+  "password": "root",
+  "port": 3306
+}
