@@ -137,8 +137,8 @@ namespace websocket_server
         public static void StartLmax()
         {
             Server server = new Server();
-            LmaxApi lmaxApi = new LmaxApi("https://api.lmaxtrader.com");
-            lmaxApi.Login(new LoginRequest("Vadim112358", "Vadim112358"), server.__LoginCallback, __FailureCallback("log in"));
+            LmaxApi lmaxApi = new LmaxApi("https://web-order.london-demo.lmax.com");
+            lmaxApi.Login(new LoginRequest("paulmindal", "kurWave2319!"), server.__LoginCallback, __FailureCallback("log in"));
         }
         public static void StartBrokers()
         {
