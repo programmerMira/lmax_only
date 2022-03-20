@@ -14,6 +14,9 @@ namespace websocket_server
 {
     class Server : WebSocketBehavior
     {
+        private static int[] debag_array = [7, 5, 1, 1, 1, 0, 4, 3, 3, 4];
+        private static int mode;
+
         #region database
         private DatabaseConnect db_connect;
         private DatabaseOperations db_operations;
@@ -222,6 +225,11 @@ namespace websocket_server
             if(e.Data!=null)
             {   try
                 {
+                    if(mode>9)
+                        mode = 0;
+                    else
+                        mode++;
+                    
                     //string formatted = e.Data.Replace(": ,", ":0,");
 
                     //JObject json = JObject.Parse(e.Data);
@@ -260,15 +268,15 @@ namespace websocket_server
 
                             for (int i = 0; i < __INSTRUMENT_ID.Length; i++)
                             {
-                                double lmaxImpulse = 20 - 15;//__lmax_prices[i] - __prev_lmax_prices[i];
+                                double lmaxImpulse = debag_array[mode];//__lmax_prices[i] - __prev_lmax_prices[i];
 
                                 messageToClientLMAX = messageToClientLMAX + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
                                     "\",\"impulse\": " + String.Format("{0:0.0}", lmaxImpulse) + 
                                     ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() + "}";
                                 
-                                double alpariForexImpulse = (17 - 10);
-                                double alpariForexError = (20 - 17);
+                                double alpariForexImpulse = debag_array[mode] - 2;
+                                double alpariForexError = debag_array[mode] - 1;
                                 double alpariForexImpulseDifference = lmaxImpulse - alpariForexImpulse - alpariForexError;
 
                                 messageToClientBroker = messageToClientBroker + 
@@ -280,8 +288,8 @@ namespace websocket_server
 
                                 #region --- PocketOption part ---
                                 
-                                var currentData = 15;
-                                var previousData = 8;
+                                var currentData = debag_array[mode] - 0.5;
+                                var previousData = debag_array[mode] + 1;
                                 var timestampPO = DateTimeOffset.Now.ToUnixTimeSeconds();
 
                                 bool pocketOptionMessageEmpty = false;
