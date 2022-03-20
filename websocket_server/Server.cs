@@ -126,13 +126,13 @@ namespace websocket_server
         {
             Console.WriteLine("Server started...");
 
-            alpariforex_Thread = new Thread(new ThreadStart(StartBrokers));
-            alpariforex_Thread.Start();
-            Console.WriteLine("brokers thread started...");
+            //alpariforex_Thread = new Thread(new ThreadStart(StartBrokers));
+            //alpariforex_Thread.Start();
+            //Console.WriteLine("brokers thread started...");
 
-            lmax_Thread = new Thread(new ThreadStart(StartLmax));
-            lmax_Thread.Start();
-            Console.WriteLine("lMAX thread started...");
+            //lmax_Thread = new Thread(new ThreadStart(StartLmax));
+            //lmax_Thread.Start();
+            //Console.WriteLine("lMAX thread started...");
         }
         public static void StartLmax()
         {
@@ -222,12 +222,12 @@ namespace websocket_server
             if(e.Data!=null)
             {   try
                 {
-                    string formatted = e.Data.Replace(": ,", ":0,");
+                    //string formatted = e.Data.Replace(": ,", ":0,");
 
-                    JObject json = JObject.Parse(e.Data);
-                    if(json.ContainsKey("token") && json.ContainsKey("ip")){
-                        Console.WriteLine(json);
-                        if(!__tokens.ContainsKey(json["token"].ToString()))
+                    //JObject json = JObject.Parse(e.Data);
+                    if(true/*json.ContainsKey("token") && json.ContainsKey("ip")*/){
+                        //Console.WriteLine(json);
+                        if(false/*!__tokens.ContainsKey(json["token"].ToString()*/))
                         {
                             db_connect = new DatabaseConnect();
                             if(db_connect.IsConnect())
@@ -250,7 +250,7 @@ namespace websocket_server
                                 Send("{\"Error\": \"no db connection\"}");
                             }
                         }
-                        if (__tokens.ContainsKey(json["token"].ToString()) && __tokens[json["token"].ToString()] == json["ip"].ToString())
+                        if (true/*__tokens.ContainsKey(json["token"].ToString()) && __tokens[json["token"].ToString()] == json["ip"].ToString()*/)
                         {
                             int messagesCounter = 0;
                             
@@ -260,43 +260,43 @@ namespace websocket_server
 
                             for (int i = 0; i < __INSTRUMENT_ID.Length; i++)
                             {
-                                double lmaxImpulse = __lmax_prices[i] - __prev_lmax_prices[i];
+                                double lmaxImpulse = 20 - 15;//__lmax_prices[i] - __prev_lmax_prices[i];
 
                                 messageToClientLMAX = messageToClientLMAX + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
-                                    "\",\"impulse\": " + String.Format("{0:0.0}", lmaxImpulse * 100000) + 
-                                    ",\"timestamp\": " + __timestamps[i] + "}";
+                                    "\",\"impulse\": " + String.Format("{0:0.0}", lmaxImpulse) + 
+                                    ",\"timestamp\": " + "19.19.19" + "}";
                                 
-                                double alpariForexImpulse = (__alpariforex_prices[i] - __prev_alpariforex_prices[i]);
-                                double alpariForexError = (__lmax_prices[i] - __alpariforex_prices[i]);
+                                double alpariForexImpulse = (17 - 10);
+                                double alpariForexError = (20 - 17);
                                 double alpariForexImpulseDifference = lmaxImpulse - alpariForexImpulse - alpariForexError;
 
                                 messageToClientBroker = messageToClientBroker + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
-                                    "\",\"impulse\": " + String.Format("{0:0.0}", alpariForexImpulse * 100000) + 
-                                    ",\"timestamp\": " + __timestamps[i] + 
-                                    ",\"error\":" + String.Format("{0:0.00}", alpariForexError * 100000) + 
-                                    ",\"impulse_difference\": " + String.Format("{0:0.0}", alpariForexImpulseDifference * 100000) + "}";
+                                    "\",\"impulse\": " + String.Format("{0:0.0}", alpariForexImpulse) + 
+                                    ",\"timestamp\": " + "19.19.19" + 
+                                    ",\"error\":" + String.Format("{0:0.00}", alpariForexError) + 
+                                    ",\"impulse_difference\": " + String.Format("{0:0.0}", alpariForexImpulseDifference) + "}";
 
                                 #region --- PocketOption part ---
                                 
-                                var currentData = __pocketOptionData[i]["currentData"];
-                                var previousData = __pocketOptionData[i]["previousData"];
-                                var timestampPO = __pocketOptionData[i]["timestamp"];
+                                var currentData = 15;
+                                var previousData = 8;
+                                var timestampPO = "10.10.10";
 
                                 bool pocketOptionMessageEmpty = false;
                                 if (currentData.ToString() != "" && previousData.ToString() != "")
                                 {
                                     double pocketOptionImpulse = Convert.ToDouble(currentData) - Convert.ToDouble(previousData);
-                                    double pocketOptionError = __lmax_prices[i] - Convert.ToDouble(currentData);
+                                    double pocketOptionError = 20 - Convert.ToDouble(currentData);
                                     double pocketOptionImpulseDifference = lmaxImpulse - pocketOptionImpulse - pocketOptionError;
 
                                     messageToClientPocketOption +=
                                         "{\"name\": \"" + __INSTRUMENT_NAMES[i] +
-                                        "\",\"impulse\": " + String.Format("{0:0.0}", pocketOptionImpulse * 100000) +
-                                        ",\"timestamp\": " + __timestamps[i] +
-                                        ",\"error\":" + String.Format("{0:0.0}", pocketOptionError * 100000) +
-                                        ",\"impulse_difference\": " + String.Format("{0:0.0}", pocketOptionImpulseDifference * 100000) + "}";
+                                        "\",\"impulse\": " + String.Format("{0:0.0}", pocketOptionImpulse) +
+                                        ",\"timestamp\": " + "10.10.10" +
+                                        ",\"error\":" + String.Format("{0:0.0}", pocketOptionError) +
+                                        ",\"impulse_difference\": " + String.Format("{0:0.0}", pocketOptionImpulseDifference) + "}";
                                     
                                     //DateTime today = DateTime.Today;
                                     //Directory.CreateDirectory(Path.GetDirectoryName("logs/"+today.ToString()));
@@ -347,9 +347,9 @@ namespace websocket_server
                             Send(finMessage);
 
                             
-                            __lmax_prices.CopyTo(__prev_lmax_prices, 0);
-                            __timestamps.CopyTo(__prev_timestamps, 0);
-				            __alpariforex_prices.CopyTo(__prev_alpariforex_prices, 0);
+                            //__lmax_prices.CopyTo(__prev_lmax_prices, 0);
+                            //__timestamps.CopyTo(__prev_timestamps, 0);
+				            //__alpariforex_prices.CopyTo(__prev_alpariforex_prices, 0);
                         }
                         else
                         {
@@ -358,10 +358,10 @@ namespace websocket_server
                     }
                     else if(json.ContainsKey("closeToken") && json.ContainsKey("ip"))
                     {
-                        if(__tokens[json["closeToken"].ToString()] == json["ip"].ToString())
+                        /*if(__tokens[json["closeToken"].ToString()] == json["ip"].ToString())
                         {
                             __tokens.Remove(json["closeToken"].ToString());
-                        }
+                        }*/
                     }
                     else 
                     {
