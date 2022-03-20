@@ -227,7 +227,7 @@ namespace websocket_server
                     //JObject json = JObject.Parse(e.Data);
                     if(true/*json.ContainsKey("token") && json.ContainsKey("ip")*/){
                         //Console.WriteLine(json);
-                        if(false/*!__tokens.ContainsKey(json["token"].ToString()*/))
+                        if(false/*!__tokens.ContainsKey(json["token"].ToString())*/)
                         {
                             db_connect = new DatabaseConnect();
                             if(db_connect.IsConnect())
