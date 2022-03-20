@@ -225,7 +225,7 @@ namespace websocket_server
             if(e.Data!=null)
             {   try
                 {
-                    if(mode>9)
+                    if(mode>=9)
                         mode = 0;
                     else
                         mode++;
