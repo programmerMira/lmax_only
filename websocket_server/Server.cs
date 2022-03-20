@@ -229,7 +229,7 @@ namespace websocket_server
                         //Console.WriteLine(json);
                         if(false/*!__tokens.ContainsKey(json["token"].ToString())*/)
                         {
-                            db_connect = new DatabaseConnect();
+                            /*db_connect = new DatabaseConnect();
                             if(db_connect.IsConnect())
                             {
                                 db_operations = new DatabaseOperations(db_connect.Connection);
@@ -248,7 +248,7 @@ namespace websocket_server
                             else
                             {
                                 Send("{\"Error\": \"no db connection\"}");
-                            }
+                            }*/
                         }
                         if (true/*__tokens.ContainsKey(json["token"].ToString()) && __tokens[json["token"].ToString()] == json["ip"].ToString()*/)
                         {
@@ -356,7 +356,7 @@ namespace websocket_server
                             Send("{\"Error\": \"Wrong token sent or its already in use by other computer.\"}");
                         }
                     }
-                    else if(json.ContainsKey("closeToken") && json.ContainsKey("ip"))
+                    else if(false/*json.ContainsKey("closeToken") && json.ContainsKey("ip")*/)
                     {
                         /*if(__tokens[json["closeToken"].ToString()] == json["ip"].ToString())
                         {
