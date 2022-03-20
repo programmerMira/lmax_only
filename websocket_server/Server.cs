@@ -14,7 +14,7 @@ namespace websocket_server
 {
     class Server : WebSocketBehavior
     {
-        private static int[] debag_array = [7, 5, 1, 1, 1, 0, 4, 3, 3, 4];
+        private static int[] debag_array = {7, 5, 1, 1, 1, 0, 4, 3, 3, 4};
         private static int mode;
 
         #region database
@@ -296,7 +296,7 @@ namespace websocket_server
                                 if (currentData.ToString() != "" && previousData.ToString() != "")
                                 {
                                     double pocketOptionImpulse = Convert.ToDouble(currentData) - Convert.ToDouble(previousData);
-                                    double pocketOptionError = 20 - Convert.ToDouble(currentData);
+                                    double pocketOptionError = debag_array[mode] - Convert.ToDouble(currentData);
                                     double pocketOptionImpulseDifference = lmaxImpulse - pocketOptionImpulse - pocketOptionError;
 
                                     messageToClientPocketOption +=
