@@ -265,7 +265,7 @@ namespace websocket_server
                                 messageToClientLMAX = messageToClientLMAX + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
                                     "\",\"impulse\": " + String.Format("{0:0.0}", lmaxImpulse) + 
-                                    ",\"timestamp\": " + "19.19.19" + "}";
+                                    ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() + "}";
                                 
                                 double alpariForexImpulse = (17 - 10);
                                 double alpariForexError = (20 - 17);
@@ -274,7 +274,7 @@ namespace websocket_server
                                 messageToClientBroker = messageToClientBroker + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
                                     "\",\"impulse\": " + String.Format("{0:0.0}", alpariForexImpulse) + 
-                                    ",\"timestamp\": " + "19.19.19" + 
+                                    ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() + 
                                     ",\"error\":" + String.Format("{0:0.00}", alpariForexError) + 
                                     ",\"impulse_difference\": " + String.Format("{0:0.0}", alpariForexImpulseDifference) + "}";
 
@@ -282,7 +282,7 @@ namespace websocket_server
                                 
                                 var currentData = 15;
                                 var previousData = 8;
-                                var timestampPO = "10.10.10";
+                                var timestampPO = DateTimeOffset.Now.ToUnixTimeSeconds();
 
                                 bool pocketOptionMessageEmpty = false;
                                 if (currentData.ToString() != "" && previousData.ToString() != "")
@@ -294,7 +294,7 @@ namespace websocket_server
                                     messageToClientPocketOption +=
                                         "{\"name\": \"" + __INSTRUMENT_NAMES[i] +
                                         "\",\"impulse\": " + String.Format("{0:0.0}", pocketOptionImpulse) +
-                                        ",\"timestamp\": " + "10.10.10" +
+                                        ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() +
                                         ",\"error\":" + String.Format("{0:0.0}", pocketOptionError) +
                                         ",\"impulse_difference\": " + String.Format("{0:0.0}", pocketOptionImpulseDifference) + "}";
                                     
