@@ -14,14 +14,10 @@ namespace websocket_server
 {
     class Server : WebSocketBehavior
     {
-        private static int[] debag_array = {7, 5, 1, 1, 1, 0, 4, 3, 3, 4};
-        private static int mode;
-
         #region database
         private DatabaseConnect db_connect;
         private DatabaseOperations db_operations;
-        private Dictionary<string, string> __tokens = new Dictionary<string, string>();
-        private Dictionary<string, string> __tokensToClose = new Dictionary<string, string>();
+        private static Dictionary<string, string> __tokens;
         private static Thread alpariforex_Thread;
         private static Thread lmax_Thread;
         #endregion
@@ -46,12 +42,12 @@ namespace websocket_server
         
         #region private variables (general)
         private static string __brokers_url = "ws://188.119.113.137:5001/Server";
-        private static volatile double[] __alpariforex_prices = new double[__INSTRUMENT_ID.Length];
-        private static volatile double[] __prev_alpariforex_prices = new double[__INSTRUMENT_ID.Length];
-        private static volatile double[] __lmax_prices = new double[__INSTRUMENT_ID.Length];
-        private static volatile double[] __prev_lmax_prices = new double[__INSTRUMENT_ID.Length];
-        private static volatile long[] __timestamps = new long[__INSTRUMENT_ID.Length];
-        private static volatile long[] __prev_timestamps = new long[__INSTRUMENT_ID.Length];
+        private static volatile double[] __alpariforex_prices;
+        private static volatile double[] __prev_alpariforex_prices;
+        private static volatile double[] __lmax_prices;
+        private static volatile double[] __prev_lmax_prices;
+        private static volatile long[] __timestamps;
+        private static volatile long[] __prev_timestamps;
 
         //POCKETOPTION
         private static volatile JArray __pocketOptionData;
@@ -62,6 +58,8 @@ namespace websocket_server
         #region private functions (library)
         private void __MarketDataUpdate(OrderBookEvent orderBookEvent)
         {
+			__lmax_prices.CopyTo(__prev_lmax_prices, 0);
+			__timestamps.CopyTo(__prev_timestamps, 0);
 			
             for(int i = 0; i<__INSTRUMENT_ID.Length;i++)
             {
@@ -71,14 +69,13 @@ namespace websocket_server
                 }
 				
 				if(i == 0 && orderBookEvent.InstrumentId==__INSTRUMENT_ID[i]){
-					using (StreamWriter writer = new StreamWriter("lMAX_OUTPUT.txt", true))
+					using (StreamWriter writer = new StreamWriter("server_lmax_prod.txt", true))
 					{
-						writer.WriteLine("CUR:"+__lmax_prices[0].ToString());
-						if(__prev_lmax_prices.Length > 0){
-							writer.WriteLine("PREV:"+__prev_lmax_prices[0].ToString());
-                            writer.WriteLine("Diff:"+ String.Format("{0:0}", (__lmax_prices[0] - __prev_lmax_prices[0]) * 100000));
-							writer.WriteLine();
-						}
+						writer.WriteLine("ValuationBidPrice:"+orderBookEvent.ValuationBidPrice.ToString());
+						writer.WriteLine("ValuationAskPrice:"+ orderBookEvent.ValuationAskPrice.ToString());
+						writer.WriteLine("Timestamp:"+orderBookEvent.Timestamp.ToString());
+						writer.WriteLine("Now:"+DateTime.Now);
+						writer.WriteLine();
 					}
 				}
             }
@@ -128,20 +125,33 @@ namespace websocket_server
         public static void StartThreads()
         {
             Console.WriteLine("Server started...");
+			
+			__tokens = new Dictionary<string, string>();
+			__alpariforex_prices = new double[__INSTRUMENT_ID.Length];
+			__prev_alpariforex_prices = new double[__INSTRUMENT_ID.Length];
+			__lmax_prices = new double[__INSTRUMENT_ID.Length];
+			__prev_lmax_prices = new double[__INSTRUMENT_ID.Length];
+			__timestamps = new long[__INSTRUMENT_ID.Length];
+			__prev_timestamps = new long[__INSTRUMENT_ID.Length];
 
-            //alpariforex_Thread = new Thread(new ThreadStart(StartBrokers));
-            //alpariforex_Thread.Start();
-            //Console.WriteLine("brokers thread started...");
+            alpariforex_Thread = new Thread(new ThreadStart(StartBrokers));
+            alpariforex_Thread.Start();
+            Console.WriteLine("brokers thread started...");
 
-            //lmax_Thread = new Thread(new ThreadStart(StartLmax));
-            //lmax_Thread.Start();
-            //Console.WriteLine("lMAX thread started...");
+            lmax_Thread = new Thread(new ThreadStart(StartLmax));
+            lmax_Thread.Start();
+            Console.WriteLine("lMAX thread started...");
         }
         public static void StartLmax()
         {
             Server server = new Server();
+            LmaxApi lmaxApi = new LmaxApi("https://api.lmaxtrader.com");
+            lmaxApi.Login(new LoginRequest("Vadim112358", "Vadim112358"), server.__LoginCallback, __FailureCallback("log in"));
+			/*
+			Server server = new Server();
             LmaxApi lmaxApi = new LmaxApi("https://web-order.london-demo.lmax.com");
             lmaxApi.Login(new LoginRequest("paulmindal", "kurWave2319!"), server.__LoginCallback, __FailureCallback("log in"));
+			*/
         }
         public static void StartBrokers()
         {
@@ -152,7 +162,10 @@ namespace websocket_server
             ws.OnMessage += (sender, e) =>{				
                 try
                 {
+					__alpariforex_prices.CopyTo(__prev_alpariforex_prices, 0);
+					
                     JObject data = JObject.Parse(e.Data);
+					
                     JObject json = JObject.Parse(data["alpariforex"].ToString());
                     __pocketOptionData = JArray.Parse(data["pocketOption"].ToString());
 
@@ -174,6 +187,11 @@ namespace websocket_server
                 }
                 catch(Exception ex){
                     Console.WriteLine("Server.cs - Server - StartAlpariForex - EXCEPTION:{0}",ex);
+					using (StreamWriter writer = new StreamWriter("broker_errors.txt", true))
+					{
+						writer.WriteLine(ex);
+						writer.WriteLine(JObject.Parse(e.Data)["pocketOption"].ToString());
+					}
                 };
 
                 if(ws.IsAlive){
@@ -187,13 +205,19 @@ namespace websocket_server
 				}
 				else
 				{
-					try{
-						Console.WriteLine("CLOSED broker connetion, trying to reconnect...");
-						ws.Connect();
-					}
-					catch(Exception ex){
-						
-					};
+					int reconnectCounter = 0;
+					do{
+						reconnectCounter++;
+						try{
+							Console.WriteLine("CLOSED broker connetion, trying to reconnect...");
+							Thread.Sleep(1000);
+							ws.Connect();
+							ws.Send("click-msg");
+						}
+						catch(Exception ex){
+							
+						};
+					}while(!ws.IsAlive || reconnectCounter == 10);
 				}
 				
             };
@@ -225,19 +249,13 @@ namespace websocket_server
             if(e.Data!=null)
             {   try
                 {
-                    if(mode>=9)
-                        mode = 0;
-                    else
-                        mode++;
+                    JObject json = JObject.Parse(e.Data);
                     
-                    //string formatted = e.Data.Replace(": ,", ":0,");
-
-                    //JObject json = JObject.Parse(e.Data);
-                    if(true/*json.ContainsKey("token") && json.ContainsKey("ip")*/){
-                        //Console.WriteLine(json);
-                        if(false/*!__tokens.ContainsKey(json["token"].ToString())*/)
+					if(json.ContainsKey("token") && json.ContainsKey("ip")){												
+						if(!__tokens.ContainsKey(json["token"].ToString()))
                         {
-                            /*db_connect = new DatabaseConnect();
+							Console.WriteLine("New key pair:"+e.Data.ToString());
+                            db_connect = new DatabaseConnect();
                             if(db_connect.IsConnect())
                             {
                                 db_operations = new DatabaseOperations(db_connect.Connection);
@@ -245,6 +263,7 @@ namespace websocket_server
                                 if(db_operations.FindByKey(json["token"].ToString(), true))
                                 {
                                     __tokens.Add(json["token"].ToString(), json["ip"].ToString());
+									Console.WriteLine("Total connections: "+__tokens.Count);
                                 }
                                 else
                                 {
@@ -256,9 +275,9 @@ namespace websocket_server
                             else
                             {
                                 Send("{\"Error\": \"no db connection\"}");
-                            }*/
+                            }
                         }
-                        if (true/*__tokens.ContainsKey(json["token"].ToString()) && __tokens[json["token"].ToString()] == json["ip"].ToString()*/)
+                        if (__tokens.ContainsKey(json["token"].ToString()) && __tokens[json["token"].ToString()] == json["ip"].ToString())
                         {
                             int messagesCounter = 0;
                             
@@ -268,68 +287,71 @@ namespace websocket_server
 
                             for (int i = 0; i < __INSTRUMENT_ID.Length; i++)
                             {
-                                double lmaxImpulse = debag_array[mode];//__lmax_prices[i] - __prev_lmax_prices[i];
+                                double lmaxImpulse = __lmax_prices[i] - __prev_lmax_prices[i];
 
                                 messageToClientLMAX = messageToClientLMAX + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
-                                    "\",\"impulse\": " + String.Format("{0:0.0}", lmaxImpulse) + 
-                                    ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() + "}";
+                                    "\",\"impulse\": " + String.Format("{0:0.0}", lmaxImpulse * 100000) + 
+                                    ",\"timestamp\": " + __timestamps[i] + "}";
                                 
-                                double alpariForexImpulse = debag_array[mode] - 2;
-                                double alpariForexError = debag_array[mode] - 1;
+                                double alpariForexImpulse = (__alpariforex_prices[i] - __prev_alpariforex_prices[i]);
+                                double alpariForexError = (__lmax_prices[i] - __alpariforex_prices[i]);
                                 double alpariForexImpulseDifference = lmaxImpulse - alpariForexImpulse - alpariForexError;
 
                                 messageToClientBroker = messageToClientBroker + 
                                     "{\"name\": \"" + __INSTRUMENT_NAMES[i] + 
-                                    "\",\"impulse\": " + String.Format("{0:0.0}", alpariForexImpulse) + 
-                                    ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() + 
-                                    ",\"error\":" + String.Format("{0:0.00}", alpariForexError) + 
-                                    ",\"impulse_difference\": " + String.Format("{0:0.0}", alpariForexImpulseDifference) + "}";
+                                    "\",\"impulse\": " + String.Format("{0:0.0}", alpariForexImpulse * 100000) + 
+                                    ",\"timestamp\": " + __timestamps[i] + 
+                                    ",\"error\":" + String.Format("{0:0.00}", alpariForexError * 100000) + 
+                                    ",\"impulse_difference\": " + String.Format("{0:0.0}", alpariForexImpulseDifference * 100000) + "}";
 
                                 #region --- PocketOption part ---
                                 
-                                var currentData = debag_array[mode] - 0.5;
-                                var previousData = debag_array[mode] + 1;
-                                var timestampPO = DateTimeOffset.Now.ToUnixTimeSeconds();
+                                var currentData = __pocketOptionData[i]["currentData"];
+                                var previousData = __pocketOptionData[i]["previousData"];
+                                var timestampPO = __pocketOptionData[i]["timestamp"];
 
                                 bool pocketOptionMessageEmpty = false;
                                 if (currentData.ToString() != "" && previousData.ToString() != "")
                                 {
                                     double pocketOptionImpulse = Convert.ToDouble(currentData) - Convert.ToDouble(previousData);
-                                    double pocketOptionError = debag_array[mode] - Convert.ToDouble(currentData);
+                                    double pocketOptionError = __lmax_prices[i] - Convert.ToDouble(currentData);
                                     double pocketOptionImpulseDifference = lmaxImpulse - pocketOptionImpulse - pocketOptionError;
 
                                     messageToClientPocketOption +=
                                         "{\"name\": \"" + __INSTRUMENT_NAMES[i] +
-                                        "\",\"impulse\": " + String.Format("{0:0.0}", pocketOptionImpulse) +
-                                        ",\"timestamp\": " + DateTimeOffset.Now.ToUnixTimeSeconds() +
-                                        ",\"error\":" + String.Format("{0:0.0}", pocketOptionError) +
-                                        ",\"impulse_difference\": " + String.Format("{0:0.0}", pocketOptionImpulseDifference) + "}";
+                                        "\",\"impulse\": " + String.Format("{0:0.0}", pocketOptionImpulse * 100000) +
+                                        ",\"timestamp\": " + __timestamps[i] +
+                                        ",\"error\":" + String.Format("{0:0.0}", pocketOptionError * 100000) +
+                                        ",\"impulse_difference\": " + String.Format("{0:0.0}", pocketOptionImpulseDifference * 100000) + "}";
                                     
-                                    //DateTime today = DateTime.Today;
-                                    //Directory.CreateDirectory(Path.GetDirectoryName("logs/"+today.ToString()));
-                                    /*REWRITE BEFORE START!!!!!
-                                    using (StreamWriter writer = new StreamWriter("logs/"+json["token"].ToString() + ".txt", true))
-                                    {
-                                        writer.WriteLine("Name: " + __INSTRUMENT_NAMES[i]);
-                                        writer.WriteLine("LMAX (curr:prev): "+(__lmax_prices[i].ToString()+":"+__prev_lmax_prices[i].ToString()).ToString());
-                                        writer.WriteLine("LMAX (impulse): "+String.Format("{0:0.00000}", (__lmax_prices[i] - __prev_lmax_prices[i])));
-                                        writer.WriteLine();
-                                        writer.WriteLine("Alpari (curr:prev): "+(__alpariforex_prices[i].ToString()+":"+__prev_alpariforex_prices[i].ToString()).ToString());
-                                        writer.WriteLine("Alpari (impulse): "+String.Format("{0:0.00000}", (__alpariforex_prices[i] - __prev_alpariforex_prices[i])));
-                                        writer.WriteLine("Alpari (impulse_difference): "+String.Format("{0:0.00000}", ((__lmax_prices[i] - __prev_lmax_prices[i]) - (__alpariforex_prices[i] - __prev_alpariforex_prices[i]) - __prices[i])));
-                                        writer.WriteLine("Alpari (error): "+String.Format("{0:0.00000}", (__prices[i])));
-                                        
-                                        writer.WriteLine();
-                                        writer.WriteLine("PocketOption (curr:prev): "+(currentData.ToString()+":"+previousData.ToString()));
-                                        writer.WriteLine("PocketOption (impulse): "+String.Format("{0:0.00000}", (pocketOptionImpulse)));
-                                        writer.WriteLine("PocketOption (impulse_difference): "+String.Format("{0:0.00000}", (pocketOptionImpulseDifference)));
-                                        writer.WriteLine("PocketOption (error): "+String.Format("{0:0.00000}", (pocketOptionError)));
-                                        writer.WriteLine("PocketOption (timestamp): "+timestampPO.ToString());
-                                        
-                                        writer.WriteLine();
-                                        writer.WriteLine("-----------------------------------------------------------------------------------");
-                                    }*/
+									if (true)
+									{
+										DateTime dateTime = DateTime.UtcNow.Date;;
+										Directory.CreateDirectory(Path.GetDirectoryName("logs/"+dateTime.ToString("dd.MM.yyyy")+"/"));
+										
+										using (StreamWriter writer = new StreamWriter("logs/"+dateTime.ToString("dd.MM.yyyy")+"/"+json["token"].ToString() + ".txt", true))
+										{
+											writer.WriteLine("Name: " + __INSTRUMENT_NAMES[i]);
+											writer.WriteLine("LMAX (curr:prev): "+(__lmax_prices[i].ToString()+":"+__prev_lmax_prices[i].ToString()).ToString());
+											writer.WriteLine("LMAX (impulse): "+String.Format("{0:0.00}", lmaxImpulse * 100000));
+											writer.WriteLine();
+											writer.WriteLine("Alpari (curr:prev): "+(__alpariforex_prices[i].ToString()+":"+__prev_alpariforex_prices[i].ToString()).ToString());
+											writer.WriteLine("Alpari (impulse): "+String.Format("{0:0.00}", alpariForexImpulse * 100000));
+											writer.WriteLine("Alpari (impulse_difference): "+String.Format("{0:0.00}", alpariForexImpulseDifference * 100000));
+											writer.WriteLine("Alpari (error): "+String.Format("{0:0.00}", alpariForexError * 100000));
+											
+											writer.WriteLine();
+											writer.WriteLine("PocketOption (curr:prev): "+(currentData.ToString()+":"+previousData.ToString()));
+											writer.WriteLine("PocketOption (impulse): "+String.Format("{0:0.00}", pocketOptionImpulse * 100000));
+											writer.WriteLine("PocketOption (impulse_difference): "+String.Format("{0:0.00}", pocketOptionImpulseDifference * 100000));
+											writer.WriteLine("PocketOption (error): "+String.Format("{0:0.00}", (pocketOptionError)));
+											writer.WriteLine("PocketOption (timestamp): "+timestampPO.ToString());
+											
+											writer.WriteLine();
+											writer.WriteLine("-----------------------------------------------------------------------------------");
+										}
+									}
                                 }
                                 else
                                 {
@@ -353,23 +375,20 @@ namespace websocket_server
                             string finMessage = messageToClientLMAX + messageToClientBroker + messageToClientPocketOption + "]}";
                             
                             Send(finMessage);
-
-                            
-                            //__lmax_prices.CopyTo(__prev_lmax_prices, 0);
-                            //__timestamps.CopyTo(__prev_timestamps, 0);
-				            //__alpariforex_prices.CopyTo(__prev_alpariforex_prices, 0);
                         }
-                        else
+						else
                         {
                             Send("{\"Error\": \"Wrong token sent or its already in use by other computer.\"}");
                         }
-                    }
-                    else if(false/*json.ContainsKey("closeToken") && json.ContainsKey("ip")*/)
+					}
+                    if(json.ContainsKey("closeToken") && json.ContainsKey("ip"))
                     {
-                        /*if(__tokens[json["closeToken"].ToString()] == json["ip"].ToString())
+                        if(__tokens.ContainsKey(json["closeToken"].ToString()) && __tokens[json["closeToken"].ToString()] == json["ip"].ToString())
                         {
+							Console.WriteLine("Connection closed for token " + json["closeToken"].ToString());
                             __tokens.Remove(json["closeToken"].ToString());
-                        }*/
+							Console.WriteLine("Total connections: "+__tokens.Count);
+                        }
                     }
                     else 
                     {
@@ -390,7 +409,7 @@ namespace websocket_server
 
         protected override void OnClose(CloseEventArgs e)
         {
-            Console.WriteLine("Closed with code " + e.Code + " and reason - " + e.Reason);
+			Console.WriteLine("Close: " + e.Reason + " Code: " + e.Code);
         }
 
         protected override void OnError(WebSocketSharp.ErrorEventArgs e)
